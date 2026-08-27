@@ -212,7 +212,7 @@ class _FeaturedHotelCardState extends State<FeaturedHotelCard> with SingleTicker
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${widget.hotel.guests} Guests',
+                        '${widget.hotel.guests} Rooms',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textMuted,

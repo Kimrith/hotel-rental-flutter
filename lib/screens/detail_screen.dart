@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
 import '../theme/app_theme.dart';
+import '../widgets/booking_bottom_sheet.dart';
+import '../widgets/room_detail_bottom_sheet.dart';
 
 class DetailScreen extends StatefulWidget {
   final Hotel hotel;
@@ -17,9 +19,8 @@ class _DetailScreenState extends State<DetailScreen> {
   bool _isDescriptionExpanded = false;
   late PageController _pageController;
 
-  // Simple state for booking date selections
-  DateTimeRange? _selectedDateRange;
-  int _guestCount = 2;
+  int _selectedRoomIndex = 0;
+  String _selectedRoomCategory = 'All';
 
   @override
   void initState() {
@@ -257,6 +258,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
+                      _buildRoomSelector(),
+                      const SizedBox(height: 24),
                       Divider(color: AppTheme.border),
                       const SizedBox(height: 16),
                       // Description
@@ -348,17 +351,12 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildMockMap(),
-                      const SizedBox(height: 100), // Spacing for floating bottom action
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
             ],
-          ),
-          // Floating Bottom Booking Action
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _buildBottomActionBar(context),
           ),
         ],
       ),
@@ -465,330 +463,9 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  Widget _buildBottomActionBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Price per night',
-                style: TextStyle(
-                  color: AppTheme.textMuted,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 2),
-              RichText(
-                text: TextSpan(
-                  text: '\$${widget.hotel.price.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primary,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: ' / night',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.textMuted,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          ElevatedButton(
-            onPressed: () => _showBookingDialog(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Book Now',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _showBookingDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-              ),
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: AppTheme.border,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Select Dates & Guests',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Date range selector row
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDateRangePicker(
-                        context: context,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                        initialDateRange: _selectedDateRange ??
-                            DateTimeRange(
-                              start: DateTime.now(),
-                              end: DateTime.now().add(const Duration(days: 3)),
-                            ),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: ColorScheme.light(
-                                primary: AppTheme.primary,
-                                onPrimary: Colors.white,
-                                surface: Colors.white,
-                                onSurface: AppTheme.textDark,
-                              ),
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (picked != null) {
-                        setModalState(() {
-                          _selectedDateRange = picked;
-                        });
-                        setState(() {
-                          _selectedDateRange = picked;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: AppTheme.background,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today_rounded, color: AppTheme.primary, size: 20),
-                              const SizedBox(width: 12),
-                              Text(
-                                _selectedDateRange == null
-                                    ? 'Select dates'
-                                    : '${_selectedDateRange!.start.month}/${_selectedDateRange!.start.day} - ${_selectedDateRange!.end.month}/${_selectedDateRange!.end.day}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppTheme.textDark,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.textMuted, size: 14),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Guests selection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Guests',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textDark,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: _guestCount > 1
-                                ? () {
-                                    setModalState(() {
-                                      _guestCount--;
-                                    });
-                                    setState(() {
-                                      _guestCount = _guestCount;
-                                    });
-                                  }
-                                : null,
-                            icon: Icon(Icons.remove_circle_outline_rounded),
-                          ),
-                          Text(
-                            '$_guestCount',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          IconButton(
-                            onPressed: _guestCount < widget.hotel.guests
-                                ? () {
-                                    setModalState(() {
-                                      _guestCount++;
-                                    });
-                                    setState(() {
-                                      _guestCount = _guestCount;
-                                    });
-                                  }
-                                : null,
-                            icon: Icon(Icons.add_circle_outline_rounded),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Summary calculations
-                  if (_selectedDateRange != null) ...[
-                    Divider(color: AppTheme.border),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '\$${widget.hotel.price.toStringAsFixed(0)} x ${_selectedDateRange!.duration.inDays} nights',
-                          style: TextStyle(color: AppTheme.textMuted),
-                        ),
-                        Text(
-                          '\$${(widget.hotel.price * _selectedDateRange!.duration.inDays).toStringAsFixed(0)}',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Cleaning fee', style: TextStyle(color: AppTheme.textMuted)),
-                        Text('\$45', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Service fee', style: TextStyle(color: AppTheme.textMuted)),
-                        Text('\$25', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total (USD)',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          '\$${(widget.hotel.price * _selectedDateRange!.duration.inDays + 70).toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  // Confirm Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showSuccessDialog();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Confirm and Pay',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+
+
 
   void _showSuccessDialog() {
     showDialog(
@@ -866,6 +543,251 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
         );
       },
+    );
+  }
+
+
+
+  Widget _buildRoomSelector() {
+    final categories = ['All', 'Normal', 'VIP'];
+    final filteredRooms = widget.hotel.rooms.where((room) {
+      if (_selectedRoomCategory == 'All') return true;
+      return room.type == _selectedRoomCategory;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Room',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDark,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Category Chips List
+        SizedBox(
+          height: 38,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              final isSelected = category == _selectedRoomCategory;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedRoomCategory = category;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.primary : AppTheme.cardBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primary : AppTheme.border,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppTheme.textMuted,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Rooms List
+        SizedBox(
+          height: 140,
+          child: filteredRooms.isEmpty
+              ? Center(
+                  child: Text(
+                    'No rooms available in this category',
+                    style: TextStyle(color: AppTheme.textMuted),
+                  ),
+                )
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: filteredRooms.length,
+                  itemBuilder: (context, index) {
+                    final room = filteredRooms[index];
+                    final originalIndex = widget.hotel.rooms.indexOf(room);
+                    final isSelected = originalIndex == _selectedRoomIndex;
+                    return GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) {
+                            return RoomDetailBottomSheet(
+                              room: room,
+                              roomIndex: originalIndex,
+                              onBookPressed: () {
+                                Navigator.pop(context); // Close details modal
+                                setState(() {
+                                  _selectedRoomIndex = originalIndex;
+                                });
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) {
+                                    return BookingBottomSheet(
+                                      hotel: widget.hotel,
+                                      room: room,
+                                      initialGuestCount: 2,
+                                      onBookingConfirmed: () {
+                                        Navigator.pop(context); // Close booking modal
+                                        _showSuccessDialog(); // Show success dialog
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: _buildRoomCard(room, isSelected),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoomCard(HotelRoom room, bool isSelected) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: 300,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? AppTheme.primary : AppTheme.border,
+          width: isSelected ? 2.5 : 1,
+        ),
+        boxShadow: isSelected ? AppTheme.cardShadow : AppTheme.softShadow,
+      ),
+      child: Row(
+        children: [
+          // Room Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              room.imageUrl,
+              width: 100,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 100,
+                color: AppTheme.primaryLight,
+                child: Icon(Icons.broken_image, color: AppTheme.primary),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Room Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: room.type == 'VIP'
+                        ? const Color(0xFFF59E0B) // Amber
+                        : const Color(0xFF64748B), // Slate
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    room.type,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  room.name,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                // Room Specs
+                Row(
+                  children: [
+                    Icon(Icons.king_bed_rounded, size: 14, color: AppTheme.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${room.beds} Beds',
+                      style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.group_rounded, size: 14, color: AppTheme.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${room.guests} Guests',
+                      style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Price
+                RichText(
+                  text: TextSpan(
+                    text: '\$${room.price.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primary,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' / night',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.normal,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -967,3 +889,5 @@ class MapGraphicsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+

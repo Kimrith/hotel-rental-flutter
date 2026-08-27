@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Featured Places',
+                'Featured Hotels',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

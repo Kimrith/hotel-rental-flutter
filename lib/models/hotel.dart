@@ -14,6 +14,7 @@ class Hotel {
   final int beds;
   final int baths;
   final int guests;
+  final List<HotelRoom> rooms;
   bool isFavorite;
 
   Hotel({
@@ -32,6 +33,7 @@ class Hotel {
     required this.beds,
     required this.baths,
     required this.guests,
+    required this.rooms,
     this.isFavorite = false,
   });
 }
@@ -43,6 +45,30 @@ class HotelAmenity {
   const HotelAmenity({
     required this.name,
     required this.iconKey,
+  });
+}
+
+class HotelRoom {
+  final String name;
+  final double price;
+  final int beds;
+  final int baths;
+  final int guests;
+  final String imageUrl;
+  final List<String> imageUrls;
+  final String type;
+  final List<String> amenities;
+
+  const HotelRoom({
+    required this.name,
+    required this.price,
+    required this.beds,
+    required this.baths,
+    required this.guests,
+    required this.imageUrl,
+    required this.imageUrls,
+    required this.type,
+    required this.amenities,
   });
 }
 
@@ -78,6 +104,38 @@ final List<Hotel> mockHotels = [
     baths: 2,
     guests: 4,
     isFavorite: true,
+    rooms: [
+      const HotelRoom(
+        name: 'Standard Glass Cabin',
+        price: 320.0,
+        beds: 1,
+        baths: 1,
+        guests: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'Normal',
+        amenities: ['Wifi', 'AC', 'Fireplace'],
+      ),
+      const HotelRoom(
+        name: 'Luxury Forest Suite',
+        price: 480.0,
+        beds: 2,
+        baths: 2,
+        guests: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'VIP',
+        amenities: ['Sauna', 'Heated Pool', 'Wifi', 'Kitchen'],
+      ),
+    ],
   ),
   Hotel(
     id: '2',
@@ -108,6 +166,38 @@ final List<Hotel> mockHotels = [
     beds: 3,
     baths: 3,
     guests: 6,
+    rooms: [
+      const HotelRoom(
+        name: 'Beachfront Pool Villa',
+        price: 450.0,
+        beds: 2,
+        baths: 2,
+        guests: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'Normal',
+        amenities: ['Beach Access', 'AC', 'Pool'],
+      ),
+      const HotelRoom(
+        name: 'Oceanview Pavilion',
+        price: 650.0,
+        beds: 3,
+        baths: 3,
+        guests: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'VIP',
+        amenities: ['Beach Access', 'Infinity Pool', 'Spa', 'Gym'],
+      ),
+    ],
   ),
   Hotel(
     id: '3',
@@ -123,8 +213,6 @@ final List<Hotel> mockHotels = [
     imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
     imageUrls: [
       'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&q=80&w=800',
       'https://images.unsplash.com/photo-1490730141103-d89d6e2cca00?auto=format&fit=crop&q=80&w=800',
       'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
     ],
@@ -138,6 +226,38 @@ final List<Hotel> mockHotels = [
     beds: 2,
     baths: 1,
     guests: 3,
+    rooms: [
+      const HotelRoom(
+        name: 'Traditional Tatami Room',
+        price: 280.0,
+        beds: 1,
+        baths: 1,
+        guests: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1490730141103-d89d6e2cca00?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'Normal',
+        amenities: ['Zen Garden', 'Wifi'],
+      ),
+      const HotelRoom(
+        name: 'Garden View Suite',
+        price: 380.0,
+        beds: 2,
+        baths: 1,
+        guests: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'VIP',
+        amenities: ['Zen Garden', 'Hinoki Tub', 'Wifi', 'Bicycles'],
+      ),
+    ],
   ),
   Hotel(
     id: '4',
@@ -169,6 +289,38 @@ final List<Hotel> mockHotels = [
     baths: 1,
     guests: 2,
     isFavorite: true,
+    rooms: [
+      const HotelRoom(
+        name: 'Caldera Sunset Suite',
+        price: 520.0,
+        beds: 1,
+        baths: 1,
+        guests: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'Normal',
+        amenities: ['Sea View', 'Terrace', 'Breakfast'],
+      ),
+      const HotelRoom(
+        name: 'Honeymoon Cave Suite',
+        price: 720.0,
+        beds: 1,
+        baths: 2,
+        guests: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1469796466635-455edd028a14?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1469796466635-455edd028a14?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'VIP',
+        amenities: ['Cave Pool', 'Sea View', 'Terrace', 'Bar'],
+      ),
+    ],
   ),
   Hotel(
     id: '5',
@@ -199,5 +351,37 @@ final List<Hotel> mockHotels = [
     beds: 1,
     baths: 1.5.toInt(),
     guests: 2,
+    rooms: [
+      const HotelRoom(
+        name: 'Industrial Studio Loft',
+        price: 380.0,
+        beds: 1,
+        baths: 1,
+        guests: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1512917774-c2c8f000b016?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'Normal',
+        amenities: ['City View', 'AC', 'Wifi'],
+      ),
+      const HotelRoom(
+        name: 'Penthouse Duplex Loft',
+        price: 580.0,
+        beds: 2,
+        baths: 2,
+        guests: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800',
+          'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&q=80&w=800',
+        ],
+        type: 'VIP',
+        amenities: ['City View', 'Kitchen', 'AC', 'Workspace'],
+      ),
+    ],
   ),
 ];

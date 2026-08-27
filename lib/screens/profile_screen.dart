@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../auth/login.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -220,6 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Divider(color: AppTheme.border, indent: 20, endIndent: 20),
           _buildSettingTile(Icons.help_outline_rounded, 'Help Center', null),
           _buildSettingTile(Icons.info_outline_rounded, 'Privacy Policy', null),
+          _buildSettingTile(Icons.login_outlined, 'Log in', null),
         ],
       ),
     );
@@ -246,12 +248,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       trailing: trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
       onTap: trailing == null
           ? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Clicked: $title'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              if (title == 'Log in') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Clicked: $title'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              }
             }
           : null,
     );
