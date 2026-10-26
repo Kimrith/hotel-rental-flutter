@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/hotel.dart';
-import '../theme/app_theme.dart';
-import '../widgets/category_selector.dart';
-import '../widgets/custom_search_bar.dart';
-import '../widgets/hotel_card_featured.dart';
-import '../widgets/hotel_card_popular.dart';
-import 'detail_screen.dart';
+import '../../models/hotel.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/category_selector.dart';
+import '../../widgets/custom_search_bar.dart';
+import '../../widgets/hotel_card_featured.dart';
+import '../../widgets/hotel_card_popular.dart';
+import '../details/detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onFavoriteChanged;

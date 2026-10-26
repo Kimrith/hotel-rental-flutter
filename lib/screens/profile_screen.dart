@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../auth/login.dart';
+import 'package:hotel_rental/screens/profile/privacy_policy_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../auth/login.dart';
+import 'personal_details_screen.dart';
+import 'payments_screen.dart';
+import 'help_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -70,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: AppTheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.edit_rounded,
                 color: Colors.white,
                 size: 14,
@@ -98,8 +102,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.stars_rounded, color: AppTheme.accent, size: 14),
-              SizedBox(width: 4),
-              Text(
+              const SizedBox(width: 4),
+              const Text(
                 'Gold Member',
                 style: TextStyle(
                   color: Color(0xFF92400E), // Amber 800
@@ -136,7 +140,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF334155)
+                : const Color(0xFFE2E8F0),
+          ),
           boxShadow: AppTheme.softShadow,
         ),
         child: Column(
@@ -171,14 +179,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF334155)
+              : const Color(0xFFE2E8F0),
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Text(
               'Account & App Info',
               style: TextStyle(
@@ -213,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onChanged: (val) {
                 setState(() {
                   _darkModeEnabled = val;
-                  AppTheme.themeModeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                  AppTheme.updateThemeMode(val);
                 });
               },
             ),
@@ -248,20 +260,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       trailing: trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
       onTap: trailing == null
           ? () {
-              if (title == 'Log in') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Clicked: $title'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
-            }
+        if (title == 'Log in') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        } else if (title == 'Personal Details') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PersonalDetailsScreen()),
+          );
+        } else if (title == 'Payments & Payouts') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PaymentsScreen()),
+          );
+        } else if (title == "Help Center") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
+          );
+        } else if (title == "Privacy Policy") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+          );
+        }
+      }
           : null,
     );
   }

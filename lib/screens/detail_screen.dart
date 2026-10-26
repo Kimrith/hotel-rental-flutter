@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/hotel.dart';
-import '../theme/app_theme.dart';
-import '../widgets/booking_bottom_sheet.dart';
-import '../widgets/room_detail_bottom_sheet.dart';
+import '../../models/hotel.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/booking_bottom_sheet.dart';
+import '../../widgets/room_detail_bottom_sheet.dart';
 
 class DetailScreen extends StatefulWidget {
   final Hotel hotel;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/hotel.dart';
-import '../theme/app_theme.dart';
-import '../widgets/hotel_card_popular.dart';
-import 'detail_screen.dart';
+import '../../models/hotel.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/hotel_card_popular.dart';
+import '../details/detail_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final VoidCallback onFavoriteChanged;

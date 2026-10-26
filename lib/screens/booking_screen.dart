@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/hotel.dart';
-import '../theme/app_theme.dart';
-import 'detail_screen.dart';
+import '../../models/hotel.dart';
+import '../../theme/app_theme.dart';
+import '../details/detail_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
