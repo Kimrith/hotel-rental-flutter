@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
 import '../theme/app_theme.dart';
+import 'app_image.dart';
 
 class RoomDetailBottomSheet extends StatefulWidget {
   final HotelRoom room;
@@ -81,13 +82,9 @@ class _RoomDetailBottomSheetState extends State<RoomDetailBottomSheet> {
                             });
                           },
                           itemBuilder: (context, idx) {
-                            return Image.network(
-                              room.imageUrls[idx],
+                            return AppImage(
+                              imageUrl: room.imageUrls[idx],
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: AppTheme.primaryLight,
-                                child: Icon(Icons.broken_image, color: AppTheme.primary, size: 40),
-                              ),
                             );
                           },
                         ),

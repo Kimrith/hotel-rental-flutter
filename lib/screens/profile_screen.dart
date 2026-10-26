@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hotel_rental/screens/profile/privacy_policy_screen.dart';
-import '../../theme/app_theme.dart';
-import '../../auth/login.dart';
-import 'personal_details_screen.dart';
-import 'payments_screen.dart';
-import 'help_center_screen.dart';
+import '../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -261,30 +256,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: trailing == null
           ? () {
         if (title == 'Log in') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+          Navigator.pushNamed(context, '/login');
         } else if (title == 'Personal Details') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PersonalDetailsScreen()),
-          );
+          Navigator.pushNamed(context, '/personal-details');
         } else if (title == 'Payments & Payouts') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PaymentsScreen()),
-          );
+          Navigator.pushNamed(context, '/payments');
         } else if (title == "Help Center") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
-          );
+          Navigator.pushNamed(context, '/help-center');
         } else if (title == "Privacy Policy") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
-          );
+          Navigator.pushNamed(context, '/privacy-policy');
         }
       }
           : null,

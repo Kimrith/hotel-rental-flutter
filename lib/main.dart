@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
-import 'screens/main_screen.dart';
+import 'routes/app.route.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await AppTheme.init();
   runApp(
     DevicePreview(
       enabled: !kReleaseMode,
@@ -30,7 +34,8 @@ class HotelRentalApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: currentThemeMode,
-          home: const MainScreen(),
+          routes: routes,
+          initialRoute: '/splash',
         );
       },
     );

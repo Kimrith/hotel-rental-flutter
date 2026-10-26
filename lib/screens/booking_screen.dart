@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
-import '../../theme/app_theme.dart';
-import '../details/detail_screen.dart';
+import '../services/hotel_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
+import 'detail_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -70,8 +71,11 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
   }
 
   Widget _buildUpcomingTrips() {
-    // Show one mock upcoming trip to make the UI look rich and functional
-    final upcomingHotel = mockHotels[0]; // The Obsidian Pavilion
+    final hotels = HotelService().cachedHotels;
+    if (hotels.isEmpty) {
+      return _buildEmptyBookingState('No Upcoming Trips', 'You don’t have any upcoming reservations yet. Browse hotels and book your next stay!');
+    }
+    final upcomingHotel = hotels.first;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -91,8 +95,8 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
               // Image header
               Stack(
                 children: [
-                  Image.network(
-                    upcomingHotel.imageUrl,
+                  AppImage(
+                    imageUrl: upcomingHotel.imageUrl,
                     height: 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -235,7 +239,11 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
   }
 
   Widget _buildPastTrips() {
-    final pastHotel = mockHotels[2]; // Kyoto Machiya Residence
+    final hotels = HotelService().cachedHotels;
+    if (hotels.length < 2) {
+      return _buildEmptyBookingState('No Past Trips', 'Your past completed stays and booking history will show up here.');
+    }
+    final pastHotel = hotels.length > 2 ? hotels[2] : hotels.last;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -256,8 +264,8 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      pastHotel.imageUrl,
+                    child: AppImage(
+                      imageUrl: pastHotel.imageUrl,
                       height: 80,
                       width: 80,
                       fit: BoxFit.cover,
@@ -470,6 +478,50 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyBookingState(String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.calendar_month_rounded,
+                size: 64,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textMuted,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

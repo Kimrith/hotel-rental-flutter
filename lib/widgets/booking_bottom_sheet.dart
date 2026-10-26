@@ -7,7 +7,8 @@ class BookingBottomSheet extends StatefulWidget {
   final HotelRoom room;
   final DateTimeRange? initialDateRange;
   final int initialGuestCount;
-  final VoidCallback onBookingConfirmed;
+  final VoidCallback? onBookingConfirmed;
+  final void Function(DateTime checkIn, DateTime checkOut, double totalAmount, int guestCount)? onProceedToPayment;
 
   const BookingBottomSheet({
     super.key,
@@ -15,7 +16,8 @@ class BookingBottomSheet extends StatefulWidget {
     required this.room,
     this.initialDateRange,
     required this.initialGuestCount,
-    required this.onBookingConfirmed,
+    this.onBookingConfirmed,
+    this.onProceedToPayment,
   });
 
   @override
@@ -250,7 +252,21 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: widget.onBookingConfirmed,
+              onPressed: () {
+                final range = _selectedDateRange ??
+                    DateTimeRange(
+                      start: DateTime.now(),
+                      end: DateTime.now().add(const Duration(days: 1)),
+                    );
+                final nights = range.duration.inDays <= 0 ? 1 : range.duration.inDays;
+                final total = (selectedRoom.price * nights) + 70.0;
+
+                if (widget.onProceedToPayment != null) {
+                  widget.onProceedToPayment!(range.start, range.end, total, _guestCount);
+                } else if (widget.onBookingConfirmed != null) {
+                  widget.onBookingConfirmed!();
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,

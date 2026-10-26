@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/hotel_service.dart';
 import '../theme/app_theme.dart';
+import 'app_image.dart';
 
 class FeaturedHotelCard extends StatefulWidget {
   final Hotel hotel;
@@ -43,11 +45,12 @@ class _FeaturedHotelCardState extends State<FeaturedHotelCard> with SingleTicker
     super.dispose();
   }
 
-  void _handleFavoriteTap() {
-    setState(() {
-      widget.hotel.isFavorite = !widget.hotel.isFavorite;
-    });
+  void _handleFavoriteTap() async {
     _favController.forward().then((value) => _favController.reverse());
+    await HotelService().toggleFavorite(widget.hotel);
+    if (mounted) {
+      setState(() {});
+    }
     if (widget.onFavoriteToggle != null) {
       widget.onFavoriteToggle!();
     }
@@ -73,28 +76,17 @@ class _FeaturedHotelCardState extends State<FeaturedHotelCard> with SingleTicker
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: Hero(
-                    tag: widget.heroTag ?? 'hotel-img-${widget.hotel.id}',
-                    child: Image.network(
-                      widget.hotel.imageUrl,
-                      height: 160,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                  child: SizedBox(
+                    height: 160,
+                    width: double.infinity,
+                    child: Hero(
+                      tag: widget.heroTag ?? 'hotel-img-${widget.hotel.id}',
+                      child: AppImage(
+                        imageUrl: widget.hotel.imageUrl,
                         height: 160,
-                        color: AppTheme.primaryLight,
-                        child: Icon(Icons.broken_image, color: AppTheme.primary),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 160,
-                          color: AppTheme.border,
-                          child: Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ),
@@ -212,7 +204,7 @@ class _FeaturedHotelCardState extends State<FeaturedHotelCard> with SingleTicker
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${widget.hotel.guests} Rooms',
+                        '${widget.hotel.rooms.length} ${widget.hotel.rooms.length == 1 ? 'Room' : 'Rooms'}',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textMuted,

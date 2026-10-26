@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/hotel_service.dart';
 import '../theme/app_theme.dart';
+import 'app_image.dart';
 
 class PopularHotelCard extends StatefulWidget {
   final Hotel hotel;
@@ -39,32 +41,19 @@ class _PopularHotelCardState extends State<PopularHotelCard> {
         child: Row(
           children: [
             // Left Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Hero(
-                tag: widget.heroTag ?? 'hotel-img-popular-${widget.hotel.id}',
-                child: Image.network(
-                  widget.hotel.imageUrl,
-                  height: 94,
-                  width: 94,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+            SizedBox(
+              width: 94,
+              height: 94,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Hero(
+                  tag: widget.heroTag ?? 'hotel-img-popular-${widget.hotel.id}',
+                  child: AppImage(
+                    imageUrl: widget.hotel.imageUrl,
                     height: 94,
                     width: 94,
-                    color: AppTheme.primaryLight,
-                    child: Icon(Icons.broken_image, color: AppTheme.primary),
+                    fit: BoxFit.cover,
                   ),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 94,
-                      width: 94,
-                      color: AppTheme.border,
-                      child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
                 ),
               ),
             ),
@@ -92,10 +81,11 @@ class _PopularHotelCardState extends State<PopularHotelCard> {
                       ),
                       // Favorite
                       GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            widget.hotel.isFavorite = !widget.hotel.isFavorite;
-                          });
+                        onTap: () async {
+                          await HotelService().toggleFavorite(widget.hotel);
+                          if (mounted) {
+                            setState(() {});
+                          }
                           if (widget.onFavoriteToggle != null) {
                             widget.onFavoriteToggle!();
                           }
@@ -130,26 +120,30 @@ class _PopularHotelCardState extends State<PopularHotelCard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          text: '\$${widget.hotel.price.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: ' / night',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.normal,
-                                color: AppTheme.textMuted,
-                              ),
+                      Flexible(
+                        child: RichText(
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            text: '\$${widget.hotel.price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
                             ),
-                          ],
+                            children: [
+                              TextSpan(
+                                text: ' / night',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.normal,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 4),
                       Row(
                         children: [
                           Icon(Icons.star_rounded, color: AppTheme.accent, size: 14),

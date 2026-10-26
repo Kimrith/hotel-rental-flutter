@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:hotel_rental/main.dart';
@@ -18,6 +17,10 @@ void main() {
         builder: (context) => const HotelRentalApp(),
       ),
     );
+
+    // Advance timer past splash screen (2 seconds delay)
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify that our app shows the welcome text.
     expect(find.text('Find your\nperfect sanctuary.'), findsOneWidget);

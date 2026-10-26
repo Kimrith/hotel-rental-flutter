@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import '../services/theme_service.dart';
 
 class AppTheme {
   static final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+
+  static Future<void> init() async {
+    final isDark = await ThemeService.isDarkMode();
+    themeModeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+  }
+
+  static Future<void> updateThemeMode(bool isDark) async {
+    themeModeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+    await ThemeService.saveThemeMode(isDark);
+  }
 
   // Brand colors
   static const Color primary = Color(0xFF4F46E5); // Indigo 600

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
+import '../../services/hotel_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/booking_bottom_sheet.dart';
+import '../../widgets/app_image.dart';
+import '../../widgets/payment_dialog.dart';
 import '../../widgets/room_detail_bottom_sheet.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -34,10 +36,11 @@ class _DetailScreenState extends State<DetailScreen> {
     super.dispose();
   }
 
-  void _toggleFavorite() {
-    setState(() {
-      widget.hotel.isFavorite = !widget.hotel.isFavorite;
-    });
+  void _toggleFavorite() async {
+    await HotelService().toggleFavorite(widget.hotel);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   IconData _getIconFromKey(String key) {
@@ -151,8 +154,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         itemBuilder: (context, index) {
                           return Hero(
                             tag: index == 0 ? widget.heroTag : 'hotel-img-alt-${widget.hotel.id}-$index',
-                            child: Image.network(
-                              widget.hotel.imageUrls[index],
+                            child: AppImage(
+                              imageUrl: widget.hotel.imageUrls[index],
                               fit: BoxFit.cover,
                               width: double.infinity,
                             ),
@@ -467,84 +470,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
 
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: AppTheme.cardBg,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: AppTheme.primary,
-                    size: 54,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Booking Confirmed!',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your reservation at ${widget.hotel.name} was successfully booked. Enjoy your stay!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Back to Explorer',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
 
 
@@ -644,21 +569,15 @@ class _DetailScreenState extends State<DetailScreen> {
                                 setState(() {
                                   _selectedRoomIndex = originalIndex;
                                 });
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) {
-                                    return BookingBottomSheet(
-                                      hotel: widget.hotel,
-                                      room: room,
-                                      initialGuestCount: 2,
-                                      onBookingConfirmed: () {
-                                        Navigator.pop(context); // Close booking modal
-                                        _showSuccessDialog(); // Show success dialog
-                                      },
-                                    );
-                                  },
+                                // Show payment popup asking user to pay with CASH or Bakong KHQR
+                                PaymentDialog.show(
+                                  context,
+                                  hotel: widget.hotel,
+                                  room: room,
+                                  checkInDate: DateTime.now(),
+                                  checkOutDate: DateTime.now().add(const Duration(days: 1)),
+                                  totalAmount: room.price,
+                                  guestCount: room.guests,
                                 );
                               },
                             );
@@ -694,16 +613,11 @@ class _DetailScreenState extends State<DetailScreen> {
           // Room Image
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.network(
-              room.imageUrl,
+            child: AppImage(
+              imageUrl: room.imageUrl,
               width: 100,
               height: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 100,
-                color: AppTheme.primaryLight,
-                child: Icon(Icons.broken_image, color: AppTheme.primary),
-              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -834,7 +748,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       width: isSelected ? 2.5 : 1,
                     ),
                     image: DecorationImage(
-                      image: NetworkImage(widget.hotel.imageUrls[index]),
+                      image: AppImage.provider(widget.hotel.imageUrls[index]),
                       fit: BoxFit.cover,
                     ),
                   ),

@@ -48,15 +48,15 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 24, top: 8),
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 24, top: 8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          height: 72,
+          height: 64,
           color: AppTheme.secondary, // Slate 800 for cool high-contrast look
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(0, Icons.explore_rounded, 'Explore'),
               _buildNavItem(1, Icons.favorite_rounded, 'Saved'),
@@ -81,26 +81,27 @@ class _MainScreenState extends State<MainScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               color: isSelected ? Colors.white : AppTheme.textMuted.withOpacity(0.8),
-              size: 24,
+              size: 20,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ],

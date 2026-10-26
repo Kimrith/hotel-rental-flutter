@@ -1,4 +1,6 @@
 class Hotel {
+  static const String defaultAssetImage = 'assets/images/defualt_img.png';
+
   final String id;
   final String name;
   final String location;
@@ -16,6 +18,7 @@ class Hotel {
   final int guests;
   final List<HotelRoom> rooms;
   bool isFavorite;
+  int? favoriteId;
 
   Hotel({
     required this.id,
@@ -35,7 +38,227 @@ class Hotel {
     required this.guests,
     required this.rooms,
     this.isFavorite = false,
+    this.favoriteId,
   });
+
+  Hotel copyWith({
+    String? id,
+    String? name,
+    String? location,
+    String? city,
+    String? country,
+    double? rating,
+    int? reviewsCount,
+    double? price,
+    String? description,
+    String? imageUrl,
+    List<String>? imageUrls,
+    List<HotelAmenity>? amenities,
+    int? beds,
+    int? baths,
+    int? guests,
+    List<HotelRoom>? rooms,
+    bool? isFavorite,
+    int? favoriteId,
+  }) {
+    return Hotel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      location: location ?? this.location,
+      city: city ?? this.city,
+      country: country ?? this.country,
+      rating: rating ?? this.rating,
+      reviewsCount: reviewsCount ?? this.reviewsCount,
+      price: price ?? this.price,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
+      amenities: amenities ?? this.amenities,
+      beds: beds ?? this.beds,
+      baths: baths ?? this.baths,
+      guests: guests ?? this.guests,
+      rooms: rooms ?? this.rooms,
+      isFavorite: isFavorite ?? this.isFavorite,
+      favoriteId: favoriteId ?? this.favoriteId,
+    );
+  }
+
+  /// Factory constructor to parse HotelResponseDto from hotel-controller
+  factory Hotel.fromJson(Map<String, dynamic> json, {List<HotelRoom>? roomTypes}) {
+    final rawId = (json['id'] ?? '').toString();
+    final name = (json['name'] ?? 'Luxury Hotel').toString();
+    final city = (json['city'] ?? '').toString();
+    final address = (json['address'] ?? '').toString();
+    final country = (json['country'] ?? 'Cambodia').toString();
+    final description = (json['description'] ?? 'An exclusive luxury stay experience with world-class hospitality and modern comforts.').toString();
+
+    // Parse images from backend HotelImageResponseDto or provide curated fallbacks
+    List<String> parsedImageUrls = [];
+    if (json['images'] is List && (json['images'] as List).isNotEmpty) {
+      for (final img in (json['images'] as List)) {
+        if (img is Map && img['imageUrl'] != null && img['imageUrl'].toString().isNotEmpty) {
+          parsedImageUrls.add(img['imageUrl'].toString());
+        } else if (img is String && img.isNotEmpty) {
+          parsedImageUrls.add(img);
+        }
+      }
+    }
+
+    if (parsedImageUrls.isEmpty) {
+      parsedImageUrls = _getDefaultImages(rawId, name, city);
+    }
+
+    final mainImage = parsedImageUrls.isNotEmpty
+        ? parsedImageUrls.first
+        : defaultAssetImage;
+
+    // Parse rooms from API
+    List<HotelRoom> resolvedRooms = roomTypes ?? [];
+    if (resolvedRooms.isEmpty && json['rooms'] is List && (json['rooms'] as List).isNotEmpty) {
+      resolvedRooms = (json['rooms'] as List)
+          .map((r) => HotelRoom.fromJson(r as Map<String, dynamic>))
+          .toList();
+    }
+    if (resolvedRooms.isEmpty) {
+      resolvedRooms = [
+        HotelRoom(
+          name: 'Standard Room - $name',
+          price: (json['price'] as num?)?.toDouble() ?? 80.0,
+          beds: 1,
+          baths: 1,
+          guests: 2,
+          imageUrl: defaultAssetImage,
+          imageUrls: const [defaultAssetImage],
+          type: 'Normal',
+          amenities: const ['Wifi', 'Air Conditioning'],
+        ),
+      ];
+    }
+
+    // Determine price dynamically from rooms
+    double resolvedPrice = 80.0;
+    if (json['price'] != null) {
+      resolvedPrice = (json['price'] as num).toDouble();
+    } else if (resolvedRooms.isNotEmpty) {
+      resolvedPrice = resolvedRooms.map((r) => r.price).reduce((a, b) => a < b ? a : b);
+    }
+
+    // Determine specs dynamically from rooms
+    int resolvedGuests = 2;
+    int resolvedBeds = 1;
+    int resolvedBaths = 1;
+
+    if (resolvedRooms.isNotEmpty) {
+      resolvedGuests = resolvedRooms.map((r) => r.guests).reduce((a, b) => a > b ? a : b);
+      resolvedBeds = resolvedRooms.map((r) => r.beds).reduce((a, b) => a > b ? a : b);
+      resolvedBaths = resolvedRooms.map((r) => r.baths).reduce((a, b) => a > b ? a : b);
+    } else if (json['guests'] != null) {
+      resolvedGuests = (json['guests'] as num).toInt();
+    }
+
+    // Extract dynamic amenities from room keywords and description
+    final amenities = _extractAmenities(resolvedRooms, description);
+
+    final locationStr = address.isNotEmpty
+        ? (city.isNotEmpty ? '$address, $city' : address)
+        : (city.isNotEmpty ? '$city, $country' : country);
+
+    return Hotel(
+      id: rawId,
+      name: name,
+      location: locationStr,
+      city: city.isNotEmpty ? city : 'Phnom Penh',
+      country: country,
+      rating: json['rating'] != null ? (json['rating'] as num).toDouble() : (4.80 + ((int.tryParse(rawId) ?? 1) % 5) * 0.04),
+      reviewsCount: json['reviewsCount'] != null ? (json['reviewsCount'] as num).toInt() : (120 + ((int.tryParse(rawId) ?? 1) * 37) % 150),
+      price: resolvedPrice,
+      description: description,
+      imageUrl: mainImage,
+      imageUrls: parsedImageUrls,
+      amenities: amenities,
+      beds: json['beds'] != null ? (json['beds'] as num).toInt() : resolvedBeds,
+      baths: json['baths'] != null ? (json['baths'] as num).toInt() : resolvedBaths,
+      guests: json['guests'] != null ? (json['guests'] as num).toInt() : resolvedGuests,
+      rooms: resolvedRooms,
+      isFavorite: json['isFavorite'] == true,
+      favoriteId: (json['favoriteId'] as num?)?.toInt(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'location': location,
+      'city': city,
+      'country': country,
+      'rating': rating,
+      'reviewsCount': reviewsCount,
+      'price': price,
+      'description': description,
+      'imageUrl': imageUrl,
+      'imageUrls': imageUrls,
+      'beds': beds,
+      'baths': baths,
+      'guests': guests,
+      'isFavorite': isFavorite,
+      'favoriteId': favoriteId,
+    };
+  }
+
+  static List<String> _getDefaultImages(String id, String name, String city) {
+    return [defaultAssetImage];
+  }
+
+  static List<HotelAmenity> _extractAmenities(List<HotelRoom> rooms, String description) {
+    final Map<String, HotelAmenity> detected = {};
+    final fullText = '${rooms.map((r) => '${r.name} ${r.amenities.join(' ')}').join(' ')} $description'.toLowerCase();
+
+    void add(String key, String name, String iconKey) {
+      detected[name] = HotelAmenity(name: name, iconKey: iconKey);
+    }
+
+    if (fullText.contains('wifi') || fullText.contains('internet')) {
+      add('wifi', 'High Speed Wifi', 'wifi');
+    }
+    if (fullText.contains('pool') || fullText.contains('plunge')) {
+      add('pool', 'Swimming Pool', 'pool');
+    }
+    if (fullText.contains('beach') || fullText.contains('ocean')) {
+      add('beach', 'Beach Access', 'beach_access');
+    }
+    if (fullText.contains('spa') || fullText.contains('jacuzzi') || fullText.contains('bath')) {
+      add('spa', 'Spa & Wellness', 'spa');
+    }
+    if (fullText.contains('balcony') || fullText.contains('patio') || fullText.contains('terrace')) {
+      add('balcony', 'Private Balcony', 'deck');
+    }
+    if (fullText.contains('kitchen') || fullText.contains('kitchenette')) {
+      add('kitchen', 'Kitchenette', 'kitchen');
+    }
+    if (fullText.contains('breakfast') || fullText.contains('dining') || fullText.contains('restaurant')) {
+      add('restaurant', 'Restaurant & Dining', 'restaurant');
+    }
+    if (fullText.contains('ac') || fullText.contains('air conditioning')) {
+      add('ac', 'AC Unit', 'ac_unit');
+    }
+    if (fullText.contains('garden') || fullText.contains('flora')) {
+      add('garden', 'Tropical Garden', 'yard');
+    }
+    if (fullText.contains('workspace') || fullText.contains('desk')) {
+      add('workspace', 'Dedicated Workspace', 'laptop');
+    }
+
+    if (detected.isEmpty) {
+      return const [
+        HotelAmenity(name: 'Wifi 6', iconKey: 'wifi'),
+        HotelAmenity(name: 'AC Unit', iconKey: 'ac_unit'),
+        HotelAmenity(name: 'Room Service', iconKey: 'restaurant'),
+      ];
+    }
+
+    return detected.values.toList();
+  }
 }
 
 class HotelAmenity {
@@ -46,9 +269,22 @@ class HotelAmenity {
     required this.name,
     required this.iconKey,
   });
+
+  factory HotelAmenity.fromJson(Map<String, dynamic> json) {
+    return HotelAmenity(
+      name: json['name']?.toString() ?? 'Amenity',
+      iconKey: json['iconKey']?.toString() ?? 'check',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'iconKey': iconKey,
+  };
 }
 
 class HotelRoom {
+  final int? id;
   final String name;
   final double price;
   final int beds;
@@ -60,6 +296,7 @@ class HotelRoom {
   final List<String> amenities;
 
   const HotelRoom({
+    this.id,
     required this.name,
     required this.price,
     required this.beds,
@@ -70,318 +307,61 @@ class HotelRoom {
     required this.type,
     required this.amenities,
   });
-}
 
-// Global list of mock hotels for UI representation
-final List<Hotel> mockHotels = [
-  Hotel(
-    id: '1',
-    name: 'The Obsidian Pavilion',
-    location: 'Svenstorp, Sweden',
-    city: 'Svenstorp',
-    country: 'Sweden',
-    rating: 4.92,
-    reviewsCount: 148,
-    price: 320.0,
-    description:
-        'A striking architectural marvel nestled in the Swedish pine forests. Designed with floor-to-ceiling glass and matte-black metal, this private cabin offers an immersive nature experience. Watch the northern lights from your heated outdoor pool or unwind in the wood-fired Finnish sauna.',
-    imageUrl: 'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1475855522379-029000961472?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&q=80&w=800',
-    ],
-    amenities: [
-      const HotelAmenity(name: 'Sauna', iconKey: 'spa'),
-      const HotelAmenity(name: 'Heated Pool', iconKey: 'pool'),
-      const HotelAmenity(name: 'Wifi 6', iconKey: 'wifi'),
-      const HotelAmenity(name: 'Fireplace', iconKey: 'fireplace'),
-      const HotelAmenity(name: 'Kitchen', iconKey: 'kitchen'),
-    ],
-    beds: 2,
-    baths: 2,
-    guests: 4,
-    isFavorite: true,
-    rooms: [
-      const HotelRoom(
-        name: 'Standard Glass Cabin',
-        price: 320.0,
-        beds: 1,
-        baths: 1,
-        guests: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'Normal',
-        amenities: ['Wifi', 'AC', 'Fireplace'],
-      ),
-      const HotelRoom(
-        name: 'Luxury Forest Suite',
-        price: 480.0,
-        beds: 2,
-        baths: 2,
-        guests: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1508333706533-1ab43ecb1606?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'VIP',
-        amenities: ['Sauna', 'Heated Pool', 'Wifi', 'Kitchen'],
-      ),
-    ],
-  ),
-  Hotel(
-    id: '2',
-    name: 'Amanpuri Villa',
-    location: 'Phuket, Thailand',
-    city: 'Phuket',
-    country: 'Thailand',
-    rating: 4.88,
-    reviewsCount: 94,
-    price: 450.0,
-    description:
-        'Overlooking the pristine turquoise waters of the Andaman Sea, Amanpuri offers a sanctuary of peace and tropical elegance. Surrounded by coconut groves, this villa showcases traditional Thai architecture seamlessly blended with ultra-modern luxury and personalized butler services.',
-    imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800',
-    ],
-    amenities: [
-      const HotelAmenity(name: 'Beach Access', iconKey: 'beach_access'),
-      const HotelAmenity(name: 'Infinity Pool', iconKey: 'pool'),
-      const HotelAmenity(name: 'AC', iconKey: 'ac_unit'),
-      const HotelAmenity(name: 'Spa', iconKey: 'spa'),
-      const HotelAmenity(name: 'Gym', iconKey: 'fitness_center'),
-    ],
-    beds: 3,
-    baths: 3,
-    guests: 6,
-    rooms: [
-      const HotelRoom(
-        name: 'Beachfront Pool Villa',
-        price: 450.0,
-        beds: 2,
-        baths: 2,
-        guests: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'Normal',
-        amenities: ['Beach Access', 'AC', 'Pool'],
-      ),
-      const HotelRoom(
-        name: 'Oceanview Pavilion',
-        price: 650.0,
-        beds: 3,
-        baths: 3,
-        guests: 6,
-        imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'VIP',
-        amenities: ['Beach Access', 'Infinity Pool', 'Spa', 'Gym'],
-      ),
-    ],
-  ),
-  Hotel(
-    id: '3',
-    name: 'Kyoto Machiya Residence',
-    location: 'Gion, Kyoto, Japan',
-    city: 'Kyoto',
-    country: 'Japan',
-    rating: 4.96,
-    reviewsCount: 204,
-    price: 280.0,
-    description:
-        'Live like a local in this meticulously restored 100-year-old traditional townhouse. Situated in the heart of the historic Gion district, it features tatami mats, paper screens, a hidden private Zen garden, and a hinoki cypress wood soaking tub. Perfect for travelers seeking a cultural retreat.',
-    imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1490730141103-d89d6e2cca00?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
-    ],
-    amenities: [
-      const HotelAmenity(name: 'Zen Garden', iconKey: 'yard'),
-      const HotelAmenity(name: 'Hinoki Tub', iconKey: 'bathtub'),
-      const HotelAmenity(name: 'Teahouse', iconKey: 'coffee_maker'),
-      const HotelAmenity(name: 'Wifi', iconKey: 'wifi'),
-      const HotelAmenity(name: 'Bicycles', iconKey: 'pedal_bike'),
-    ],
-    beds: 2,
-    baths: 1,
-    guests: 3,
-    rooms: [
-      const HotelRoom(
-        name: 'Traditional Tatami Room',
-        price: 280.0,
-        beds: 1,
-        baths: 1,
-        guests: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1490730141103-d89d6e2cca00?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'Normal',
-        amenities: ['Zen Garden', 'Wifi'],
-      ),
-      const HotelRoom(
-        name: 'Garden View Suite',
-        price: 380.0,
-        beds: 2,
-        baths: 1,
-        guests: 3,
-        imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'VIP',
-        amenities: ['Zen Garden', 'Hinoki Tub', 'Wifi', 'Bicycles'],
-      ),
-    ],
-  ),
-  Hotel(
-    id: '4',
-    name: 'Sanctuary Cliff House',
-    location: 'Santorini, Greece',
-    city: 'Santorini',
-    country: 'Greece',
-    rating: 4.95,
-    reviewsCount: 312,
-    price: 520.0,
-    description:
-        'Carved into the volcanic caldera cliffs, this iconic white-washed dome suite delivers breathtaking views of the Aegean Sea sunset. Features a heated cave plunge pool, minimalist Cycladic interiors, and a sun-drenched private terrace that feels suspended in the blue sky.',
-    imageUrl: 'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1469796466635-455edd028a14?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=800',
-    ],
-    amenities: [
-      const HotelAmenity(name: 'Cave Pool', iconKey: 'pool'),
-      const HotelAmenity(name: 'Sea View', iconKey: 'wb_sunny'),
-      const HotelAmenity(name: 'Breakfast', iconKey: 'restaurant'),
-      const HotelAmenity(name: 'Terrace', iconKey: 'deck'),
-      const HotelAmenity(name: 'Bar', iconKey: 'local_bar'),
-    ],
-    beds: 1,
-    baths: 1,
-    guests: 2,
-    isFavorite: true,
-    rooms: [
-      const HotelRoom(
-        name: 'Caldera Sunset Suite',
-        price: 520.0,
-        beds: 1,
-        baths: 1,
-        guests: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1570183180671-a34057394de9?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'Normal',
-        amenities: ['Sea View', 'Terrace', 'Breakfast'],
-      ),
-      const HotelRoom(
-        name: 'Honeymoon Cave Suite',
-        price: 720.0,
-        beds: 1,
-        baths: 2,
-        guests: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1469796466635-455edd028a14?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1469796466635-455edd028a14?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'VIP',
-        amenities: ['Cave Pool', 'Sea View', 'Terrace', 'Bar'],
-      ),
-    ],
-  ),
-  Hotel(
-    id: '5',
-    name: 'The Loft at NoHo',
-    location: 'New York, USA',
-    city: 'New York',
-    country: 'USA',
-    rating: 4.79,
-    reviewsCount: 82,
-    price: 380.0,
-    description:
-        'An industrial-chic loft in New York\'s fashionable NoHo neighborhood. Boasting double-height ceilings, exposed brick walls, original hardwood floors, and mid-century modern furnishings. Steps away from the city\'s finest dining, cafes, and contemporary art galleries.',
-    imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-    imageUrls: [
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1512917774-c2c8f000b016?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&q=80&w=800',
-    ],
-    amenities: [
-      const HotelAmenity(name: 'City View', iconKey: 'location_city'),
-      const HotelAmenity(name: 'Kitchen', iconKey: 'kitchen'),
-      const HotelAmenity(name: 'Workspace', iconKey: 'laptop'),
-      const HotelAmenity(name: 'AC', iconKey: 'ac_unit'),
-      const HotelAmenity(name: 'Elevator', iconKey: 'elevator'),
-    ],
-    beds: 1,
-    baths: 1.5.toInt(),
-    guests: 2,
-    rooms: [
-      const HotelRoom(
-        name: 'Industrial Studio Loft',
-        price: 380.0,
-        beds: 1,
-        baths: 1,
-        guests: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1512917774-c2c8f000b016?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'Normal',
-        amenities: ['City View', 'AC', 'Wifi'],
-      ),
-      const HotelRoom(
-        name: 'Penthouse Duplex Loft',
-        price: 580.0,
-        beds: 2,
-        baths: 2,
-        guests: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
-        imageUrls: [
-          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=80&w=800',
-          'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&q=80&w=800',
-        ],
-        type: 'VIP',
-        amenities: ['City View', 'Kitchen', 'AC', 'Workspace'],
-      ),
-    ],
-  ),
-];
+  /// Factory constructor to parse RoomTypeResponseDto from /api/v1/room-types
+  factory HotelRoom.fromJson(Map<String, dynamic> json) {
+    final id = (json['id'] as num?)?.toInt();
+    final name = json['name']?.toString() ?? 'Comfort Suite';
+    final price = (json['basePrice'] ?? json['price'] ?? 120.0).toDouble();
+    final guests = (json['maxGuests'] ?? json['guests'] ?? 2).toInt();
+    final beds = (json['beds'] ?? (guests > 2 ? 2 : 1)).toInt();
+    final baths = (json['baths'] ?? 1).toInt();
+    
+    // Parse keywords or amenities
+    List<String> amenitiesList = [];
+    if (json['searchKeywords'] != null && json['searchKeywords'].toString().isNotEmpty) {
+      amenitiesList = json['searchKeywords'].toString().split(',').map((s) => s.trim()).toList();
+    } else if (json['amenities'] is List) {
+      amenitiesList = (json['amenities'] as List).map((e) => e.toString()).toList();
+    }
+    if (amenitiesList.isEmpty) {
+      amenitiesList = ['Wifi', 'Air Conditioning', 'King Bed'];
+    }
+
+    // Determine type
+    final type = json['type']?.toString() ?? (price >= 180.0 || name.toLowerCase().contains('villa') || name.toLowerCase().contains('suite') ? 'VIP' : 'Normal');
+
+    final fallbackUrl = Hotel.defaultAssetImage;
+
+    final mainImage = json['imageUrl']?.toString() ?? fallbackUrl;
+    final List<String> images = (json['imageUrls'] is List && (json['imageUrls'] as List).isNotEmpty)
+        ? (json['imageUrls'] as List).map((e) => e.toString()).toList()
+        : [mainImage];
+
+    return HotelRoom(
+      id: id,
+      name: name,
+      price: price,
+      beds: beds,
+      baths: baths,
+      guests: guests,
+      imageUrl: mainImage,
+      imageUrls: images,
+      type: type,
+      amenities: amenitiesList,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (id != null) 'id': id,
+    'name': name,
+    'price': price,
+    'beds': beds,
+    'baths': baths,
+    'guests': guests,
+    'imageUrl': imageUrl,
+    'imageUrls': imageUrls,
+    'type': type,
+    'amenities': amenities,
+  };
+}

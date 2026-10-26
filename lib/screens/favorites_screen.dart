@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/hotel_card_popular.dart';
-import '../details/detail_screen.dart';
+import '../models/hotel.dart';
+import '../theme/app_theme.dart';
+import '../widgets/hotel_card_popular.dart';
+import 'detail_screen.dart';
+
+import '../services/favorite_service.dart';
+import '../services/hotel_service.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final VoidCallback onFavoriteChanged;
@@ -18,29 +21,50 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   List<Hotel> _savedHotels = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadFavorites(fetchLive: true);
   }
 
-  void _loadFavorites() {
-    setState(() {
-      _savedHotels = mockHotels.where((hotel) => hotel.isFavorite).toList();
-    });
+  Future<void> _loadFavorites({bool fetchLive = false}) async {
+    if (fetchLive) {
+      if (mounted) setState(() => _isLoading = true);
+      try {
+        await FavoriteService().getFavorites();
+        FavoriteService().syncHotels(HotelService().cachedHotels);
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() {
+        _savedHotels = HotelService().cachedHotels.where((hotel) => hotel.isFavorite).toList();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _loadFavorites(); // Sync favorites when screen redraws
+    final activeFavorites = HotelService().cachedHotels.where((hotel) => hotel.isFavorite).toList();
+    final displayList = activeFavorites.isNotEmpty ? activeFavorites : _savedHotels;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Saved Destinations'),
+        title: const Text('Saved Destinations'),
         elevation: 0,
       ),
-      body: _savedHotels.isEmpty ? _buildEmptyState() : _buildFavoritesList(),
+      body: RefreshIndicator(
+        onRefresh: () => _loadFavorites(fetchLive: true),
+        color: AppTheme.primary,
+        child: _isLoading && displayList.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : displayList.isEmpty
+                ? _buildEmptyState()
+                : _buildFavoritesList(displayList),
+      ),
     );
   }
 
@@ -88,13 +112,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildFavoritesList() {
+  Widget _buildFavoritesList(List<Hotel> hotels) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      itemCount: _savedHotels.length,
+      itemCount: hotels.length,
       itemBuilder: (context, index) {
-        final hotel = _savedHotels[index];
+        final hotel = hotels[index];
         final tag = 'saved-popular-${hotel.id}';
         return PopularHotelCard(
           hotel: hotel,
@@ -104,16 +128,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               context,
               MaterialPageRoute(builder: (context) => DetailScreen(hotel: hotel, heroTag: tag)),
             ).then((_) {
-              setState(() {
-                _loadFavorites();
-              });
+              _loadFavorites();
               widget.onFavoriteChanged();
             });
           },
           onFavoriteToggle: () {
-            setState(() {
-              _loadFavorites();
-            });
+            _loadFavorites();
             widget.onFavoriteChanged();
           },
         );
