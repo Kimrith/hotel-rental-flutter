@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/auth_service.dart';
 import '../services/hotel_service.dart';
 import '../theme/app_theme.dart';
 import 'app_image.dart';
@@ -46,6 +47,9 @@ class _FeaturedHotelCardState extends State<FeaturedHotelCard> with SingleTicker
   }
 
   void _handleFavoriteTap() async {
+    if (!await AuthService().requireAuth(context, action: 'save to favorites')) {
+      return;
+    }
     _favController.forward().then((value) => _favController.reverse());
     await HotelService().toggleFavorite(widget.hotel);
     if (mounted) {

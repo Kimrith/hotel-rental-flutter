@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/hotel.dart';
+import 'auth_service.dart';
 
 class FavoriteItem {
   final int id;
@@ -45,8 +46,8 @@ class FavoriteService {
   factory FavoriteService() => _instance;
   FavoriteService._internal();
 
-  /// Default user ID for testing / single-user session
-  int defaultUserId = 1;
+  /// User ID for favorites from active session
+  int get defaultUserId => AuthService().userId;
 
   /// Cache: hotelId -> favorite record ID in database
   final Map<int, int> _favoriteIdByHotelId = {};

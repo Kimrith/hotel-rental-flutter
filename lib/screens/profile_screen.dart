@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -22,28 +23,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              const SizedBox(height: 24),
-              // Profile Header Card
-              _buildProfileHeader(),
-              const SizedBox(height: 28),
-              // Stats Block
-              _buildStatsBlock(),
-              const SizedBox(height: 28),
-              // Settings Groups
-              _buildSettingsList(),
-              const SizedBox(height: 100), // padding for bottom bar
-            ],
-          ),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: AuthService().authStateNotifier,
+          builder: (context, isLoggedIn, _) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  // Profile Header Card
+                  _buildProfileHeader(isLoggedIn),
+                  const SizedBox(height: 28),
+                  // Stats Block
+                  _buildStatsBlock(),
+                  const SizedBox(height: 28),
+                  // Settings Groups
+                  _buildSettingsList(isLoggedIn),
+                  const SizedBox(height: 100), // padding for bottom bar
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(bool isLoggedIn) {
+    final name = isLoggedIn ? AuthService().userName : 'Guest User';
+    final email = isLoggedIn ? AuthService().userEmail : 'Sign in to access all features';
+
     return Column(
       children: [
         // Avatar stack with edit pen
@@ -57,29 +66,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 4),
                 boxShadow: AppTheme.softShadow,
-                image: const DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
-                  fit: BoxFit.cover,
+                color: isLoggedIn ? null : AppTheme.primaryLight,
+                image: isLoggedIn
+                    ? const DecorationImage(
+                        image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: isLoggedIn
+                  ? null
+                  : Icon(Icons.person_outline_rounded, size: 50, color: AppTheme.primary),
+            ),
+            if (isLoggedIn)
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  color: Colors.white,
+                  size: 14,
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.edit_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
         Text(
-          'Sophia Anders',
+          name,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -87,21 +103,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 4),
+        if (email.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              email,
+              style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFFEF3C7), // Amber 100
+            color: isLoggedIn ? const Color(0xFFFEF3C7) : AppTheme.cardBg,
             borderRadius: BorderRadius.circular(12),
+            border: isLoggedIn ? null : Border.all(color: AppTheme.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.stars_rounded, color: AppTheme.accent, size: 14),
+              Icon(
+                isLoggedIn ? Icons.stars_rounded : Icons.info_outline_rounded,
+                color: isLoggedIn ? AppTheme.accent : AppTheme.textMuted,
+                size: 14,
+              ),
               const SizedBox(width: 4),
-              const Text(
-                'Gold Member',
+              Text(
+                isLoggedIn ? 'Verified Member' : 'Guest Account',
                 style: TextStyle(
-                  color: Color(0xFF92400E), // Amber 800
+                  color: isLoggedIn ? const Color(0xFF92400E) : AppTheme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -167,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsList() {
+  Widget _buildSettingsList(bool isLoggedIn) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -195,9 +224,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          _buildSettingTile(Icons.person_outline_rounded, 'Personal Details', null),
-          _buildSettingTile(Icons.payment_rounded, 'Payments & Payouts', null),
-          Divider(color: AppTheme.border, indent: 20, endIndent: 20),
+          if (isLoggedIn) ...[
+            _buildSettingTile(Icons.person_outline_rounded, 'Personal Details', null),
+            _buildSettingTile(Icons.payment_rounded, 'Payments & Payouts', null),
+            Divider(color: AppTheme.border, indent: 20, endIndent: 20),
+          ],
           _buildSettingTile(
             Icons.notifications_none_rounded,
             'Push Notifications',
@@ -228,45 +259,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Divider(color: AppTheme.border, indent: 20, endIndent: 20),
           _buildSettingTile(Icons.help_outline_rounded, 'Help Center', null),
           _buildSettingTile(Icons.info_outline_rounded, 'Privacy Policy', null),
-          _buildSettingTile(Icons.login_outlined, 'Log in', null),
+          if (isLoggedIn)
+            _buildSettingTile(
+              Icons.logout_rounded,
+              'Log out',
+              null,
+              color: Colors.red.shade600,
+            )
+          else
+            _buildSettingTile(Icons.login_outlined, 'Log in / Register', null),
         ],
       ),
     );
   }
 
-  Widget _buildSettingTile(IconData icon, String title, Widget? trailing) {
+  Widget _buildSettingTile(
+    IconData icon,
+    String title,
+    Widget? trailing, {
+    Color? color,
+  }) {
+    final effectiveColor = color ?? AppTheme.textDark;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppTheme.primaryLight,
+          color: color != null ? color.withOpacity(0.12) : AppTheme.primaryLight,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: AppTheme.primary, size: 20),
+        child: Icon(icon, color: color ?? AppTheme.primary, size: 20),
       ),
       title: Text(
         title,
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: AppTheme.textDark,
+          color: effectiveColor,
         ),
       ),
-      trailing: trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+      trailing: trailing ??
+          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
       onTap: trailing == null
-          ? () {
-        if (title == 'Log in') {
-          Navigator.pushNamed(context, '/login');
-        } else if (title == 'Personal Details') {
-          Navigator.pushNamed(context, '/personal-details');
-        } else if (title == 'Payments & Payouts') {
-          Navigator.pushNamed(context, '/payments');
-        } else if (title == "Help Center") {
-          Navigator.pushNamed(context, '/help-center');
-        } else if (title == "Privacy Policy") {
-          Navigator.pushNamed(context, '/privacy-policy');
-        }
-      }
+          ? () async {
+              if (title == 'Log in / Register') {
+                await Navigator.pushNamed(context, '/login');
+              } else if (title == 'Log out') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Log out'),
+                    content: const Text('Are you sure you want to log out?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Log out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await AuthService().logout();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Logged out successfully.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              } else if (title == 'Personal Details') {
+                Navigator.pushNamed(context, '/personal-details');
+              } else if (title == 'Payments & Payouts') {
+                Navigator.pushNamed(context, '/payments');
+              } else if (title == "Help Center") {
+                Navigator.pushNamed(context, '/help-center');
+              } else if (title == "Privacy Policy") {
+                Navigator.pushNamed(context, '/privacy-policy');
+              }
+            }
           : null,
     );
   }

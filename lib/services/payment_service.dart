@@ -22,7 +22,10 @@ class PaymentQrInfo {
     required this.merchantCity,
   });
 
-  factory PaymentQrInfo.fromJson(Map<String, dynamic> json) {
+  factory PaymentQrInfo.fromJson(Map<String, dynamic> rawJson) {
+    final json = (rawJson['data'] is Map<String, dynamic>)
+        ? rawJson['data'] as Map<String, dynamic>
+        : rawJson;
     return PaymentQrInfo(
       qrString: json['qrString']?.toString() ?? '',
       md5: json['md5']?.toString() ?? '',
@@ -50,7 +53,7 @@ class PaymentCheckResult {
 
   factory PaymentCheckResult.fromJson(Map<String, dynamic> json) {
     return PaymentCheckResult(
-      isPaid: json['isPaid'] == true,
+      isPaid: json['paid'] == true || json['isPaid'] == true,
       responseCode: (json['responseCode'] as num?)?.toInt() ?? -1,
       responseMessage: json['responseMessage']?.toString() ?? '',
       data: json['data'],
@@ -179,6 +182,19 @@ class PaymentService {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       return PaymentOrderResult.fromJson(decoded as Map<String, dynamic>);
     } else {
+      try {
+        final errorJson = jsonDecode(utf8.decode(response.bodyBytes));
+        if (errorJson is Map) {
+          final msg = errorJson['message']?.toString() ?? errorJson['error']?.toString();
+          if (msg != null && msg.isNotEmpty) {
+            throw Exception(msg);
+          }
+        }
+      } catch (e) {
+        if (e is Exception && !e.toString().contains('FormatException')) {
+          rethrow;
+        }
+      }
       final body = utf8.decode(response.bodyBytes);
       throw Exception('Payment order failed (${response.statusCode}): $body');
     }

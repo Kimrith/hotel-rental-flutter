@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/auth_service.dart';
 import '../services/hotel_service.dart';
 import '../theme/app_theme.dart';
 import 'app_image.dart';
@@ -82,6 +83,9 @@ class _PopularHotelCardState extends State<PopularHotelCard> {
                       // Favorite
                       GestureDetector(
                         onTap: () async {
+                          if (!await AuthService().requireAuth(context, action: 'save to favorites')) {
+                            return;
+                          }
                           await HotelService().toggleFavorite(widget.hotel);
                           if (mounted) {
                             setState(() {});

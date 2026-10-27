@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/hotel.dart';
+import '../services/auth_service.dart';
 import '../services/payment_service.dart';
 import '../theme/app_theme.dart';
 
@@ -244,7 +247,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
     try {
       final result = await _paymentService.processOrder(
-        customerId: 1, // Default user
+        customerId: AuthService().userId,
         hotelId: _hotelId,
         roomTypeId: _roomTypeId,
         checkInDate: _formatDate(_checkInDate),
@@ -260,10 +263,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
         _isLoading = false;
       });
     } catch (e) {
+      final cleanMsg = e.toString().replaceFirst('Exception: ', '');
       setState(() {
         _currentStep = paymentMethod == 'KHQR' ? PaymentStep.khqrWaiting : PaymentStep.chooseMethod;
         _isLoading = false;
-        _errorMessage = 'Booking submission failed: $e';
+        _errorMessage = cleanMsg;
       });
     }
   }
@@ -423,20 +427,26 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.edit_calendar_rounded, size: 15, color: AppTheme.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${_formatDisplayDate(_checkInDate)} - ${_formatDisplayDate(_checkOutDate)} ($_totalNights night${_totalNights > 1 ? 's' : ''})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textDark,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_calendar_rounded, size: 15, color: AppTheme.primary),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${_formatDisplayDate(_checkInDate)} - ${_formatDisplayDate(_checkOutDate)} ($_totalNights night${_totalNights > 1 ? 's' : ''})',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textDark,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         '\$${_totalAmount.toStringAsFixed(2)}',
                         style: TextStyle(
@@ -591,7 +601,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       Text(
                         title,
@@ -601,7 +614,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
                           color: AppTheme.textDark,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -658,10 +670,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
   // ===========================================================================
   Widget _buildKhqrDisplayView() {
     if (_qrInfo == null) return const SizedBox.shrink();
-
-    // High quality QR URL generated from official qrserver
-    final qrImageUrl =
-        'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=${Uri.encodeComponent(_qrInfo!.qrString)}';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -788,7 +796,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ),
         const SizedBox(height: 16),
 
-        // QR Image with decorative container
+        // Offline high-precision vector QR code
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -797,45 +805,59 @@ class _PaymentDialogState extends State<PaymentDialog> {
             border: Border.all(color: AppTheme.border),
             boxShadow: AppTheme.softShadow,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              qrImageUrl,
-              width: 190,
-              height: 190,
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return SizedBox(
-                  width: 190,
-                  height: 190,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primary,
-                      strokeWidth: 2,
-                    ),
+          child: QrImageView(
+            data: _qrInfo!.qrString,
+            version: QrVersions.auto,
+            size: 190,
+            gapless: true,
+            errorCorrectionLevel: QrErrorCorrectLevel.M,
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Color(0xFF1E293B),
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Quick Copy QR Data
+        InkWell(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: _qrInfo!.qrString));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('KHQR String copied to clipboard!'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.copy_rounded, size: 14, color: AppTheme.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  'Copy QR Data',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textDark,
                   ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return SizedBox(
-                  width: 190,
-                  height: 190,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.qr_code_2_rounded, size: 64, color: AppTheme.textMuted),
-                        const SizedBox(height: 6),
-                        Text(
-                          'QR Code Generated',
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                ),
+              ],
             ),
           ),
         ),

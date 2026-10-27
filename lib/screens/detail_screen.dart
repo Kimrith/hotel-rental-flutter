@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
+import '../../services/auth_service.dart';
 import '../../services/hotel_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_image.dart';
@@ -37,6 +38,9 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void _toggleFavorite() async {
+    if (!await AuthService().requireAuth(context, action: 'save to favorites')) {
+      return;
+    }
     await HotelService().toggleFavorite(widget.hotel);
     if (mounted) {
       setState(() {});
@@ -564,7 +568,11 @@ class _DetailScreenState extends State<DetailScreen> {
                             return RoomDetailBottomSheet(
                               room: room,
                               roomIndex: originalIndex,
-                              onBookPressed: () {
+                              onBookPressed: () async {
+                                if (!await AuthService().requireAuth(context, action: 'book a hotel room')) {
+                                  return;
+                                }
+                                if (!context.mounted) return;
                                 Navigator.pop(context); // Close details modal
                                 setState(() {
                                   _selectedRoomIndex = originalIndex;

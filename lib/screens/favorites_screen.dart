@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hotel_card_popular.dart';
 import 'detail_screen.dart';
@@ -30,6 +31,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Future<void> _loadFavorites({bool fetchLive = false}) async {
+    if (!AuthService().isLoggedIn) {
+      if (mounted) {
+        setState(() {
+          _savedHotels = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     if (fetchLive) {
       if (mounted) setState(() => _isLoading = true);
       try {
@@ -48,22 +59,101 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeFavorites = HotelService().cachedHotels.where((hotel) => hotel.isFavorite).toList();
-    final displayList = activeFavorites.isNotEmpty ? activeFavorites : _savedHotels;
+    return ValueListenableBuilder<bool>(
+      valueListenable: AuthService().authStateNotifier,
+      builder: (context, isLoggedIn, _) {
+        if (!isLoggedIn) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Saved Destinations'),
+              elevation: 0,
+            ),
+            body: _buildGuestState(),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Saved Destinations'),
-        elevation: 0,
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadFavorites(fetchLive: true),
-        color: AppTheme.primary,
-        child: _isLoading && displayList.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : displayList.isEmpty
-                ? _buildEmptyState()
-                : _buildFavoritesList(displayList),
+        final activeFavorites = HotelService().cachedHotels.where((hotel) => hotel.isFavorite).toList();
+        final displayList = activeFavorites.isNotEmpty ? activeFavorites : _savedHotels;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Saved Destinations'),
+            elevation: 0,
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => _loadFavorites(fetchLive: true),
+            color: AppTheme.primary,
+            child: _isLoading && displayList.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : displayList.isEmpty
+                    ? _buildEmptyState()
+                    : _buildFavoritesList(displayList),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGuestState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lock_outline_rounded,
+                color: AppTheme.primary,
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Sign in to see favorites',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Log in or create an account to view and synchronize your saved hotels.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final success = await AuthService().requireAuth(context, action: 'access your saved favorites');
+                  if (success) {
+                    _loadFavorites(fetchLive: true);
+                  }
+                },
+                icon: const Icon(Icons.login_rounded, size: 18),
+                label: const Text('Log in / Register', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
