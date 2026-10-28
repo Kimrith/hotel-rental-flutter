@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/hotel.dart';
+import '../services/auth_service.dart';
 import '../services/hotel_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_selector.dart';
@@ -240,34 +241,49 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           // User Avatar
-          Stack(
-            children: [
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.border),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
-                    fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () async {
+              if (AuthService().isLoggedIn) {
+                await Navigator.pushNamed(context, '/personal-details');
+                setState(() {});
+              } else {
+                await Navigator.pushNamed(context, '/login');
+                setState(() {});
+              }
+            },
+            child: Stack(
+              children: [
+                Container(
+                  height: 48,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppTheme.border),
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        AuthService().avatarUrl.isNotEmpty
+                            ? AuthService().avatarUrl
+                            : AuthService.defaultAvatar,
+                      ),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: 2,
-                right: 2,
-                child: Container(
-                  height: 10,
-                  width: 10,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF10B981),
-                    shape: BoxShape.circle,
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Container(
+                    height: 10,
+                    width: 10,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

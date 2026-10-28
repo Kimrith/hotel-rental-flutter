@@ -25,9 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
+      final password = _passwordController.text;
       await AuthService().login(
         email: email,
-        name: email.contains('@') ? email.split('@').first : 'User',
+        password: password,
       );
 
       if (mounted) {

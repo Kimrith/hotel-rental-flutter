@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
@@ -16,14 +17,32 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  final String _membership = 'Gold Member';
+  late String _membership;
+  late String _avatarUrl;
+
+  final List<String> _avatarPresets = [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Sophia Anders');
-    _emailController = TextEditingController(text: 'sophia.anders@example.com');
-    _phoneController = TextEditingController(text: '+1 (555) 019-2834');
+    _loadDetailsFromAuth();
+  }
+
+  void _loadDetailsFromAuth() {
+    final auth = AuthService();
+    _nameController = TextEditingController(text: auth.userName);
+    _emailController = TextEditingController(text: auth.userEmail);
+    _phoneController = TextEditingController(
+      text: auth.userPhone.isNotEmpty ? auth.userPhone : '+1 (555) 019-2834',
+    );
+    _membership = auth.isLoggedIn ? auth.membership : 'Guest Account';
+    _avatarUrl = auth.avatarUrl;
   }
 
   @override
@@ -34,14 +53,42 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     super.dispose();
   }
 
+  void _cancelEditing() {
+    setState(() {
+      _formKey.currentState?.reset();
+      final auth = AuthService();
+      _nameController.text = auth.userName;
+      _emailController.text = auth.userEmail;
+      _phoneController.text = auth.userPhone.isNotEmpty ? auth.userPhone : '+1 (555) 019-2834';
+      _avatarUrl = auth.avatarUrl;
+      _isEditing = false;
+    });
+  }
+
   Future<void> _saveDetails() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isSaving = true;
       });
 
-      // Simulate a network request or local save operation
-      await Future.delayed(const Duration(milliseconds: 1200));
+      final auth = AuthService();
+      if (!auth.isLoggedIn) {
+        // If guest, log in with these details
+        await auth.login(
+          email: _emailController.text.trim(),
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+        );
+      } else {
+        await auth.updatePersonalDetails(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          avatarUrl: _avatarUrl,
+        );
+      }
+
+      await Future.delayed(const Duration(milliseconds: 600));
 
       if (mounted) {
         setState(() {
@@ -76,9 +123,97 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     }
   }
 
+  void _showAvatarPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Choose Profile Avatar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 70,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _avatarPresets.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    final url = _avatarPresets[index];
+                    final isSelected = _avatarUrl == url;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _avatarUrl = url;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primary : Colors.transparent,
+                            width: 3,
+                          ),
+                          image: DecorationImage(
+                            image: NetworkImage(url),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: isSelected
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppTheme.primary.withOpacity(0.3),
+                                ),
+                                child: const Icon(Icons.check, color: Colors.white, size: 24),
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isLoggedIn = AuthService().isLoggedIn;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,15 +231,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             )
           else
             IconButton(
-              onPressed: () {
-                setState(() {
-                  _formKey.currentState?.reset();
-                  _nameController.text = 'Sophia Anders';
-                  _emailController.text = 'sophia.anders@example.com';
-                  _phoneController.text = '+1 (555) 019-2834';
-                  _isEditing = false;
-                });
-              },
+              onPressed: _cancelEditing,
               icon: Icon(Icons.close_rounded, color: AppTheme.textMuted),
               tooltip: 'Cancel Edit',
             ),
@@ -119,6 +246,49 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (!isLoggedIn)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, color: AppTheme.primary),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You are currently a Guest. Sign in or register to sync your profile across devices.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textDark,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            final loggedIn = await Navigator.pushNamed(context, '/login');
+                            if (loggedIn == true && mounted) {
+                              setState(() {
+                                _loadDetailsFromAuth();
+                              });
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('Log In', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 Center(
                   child: Stack(
                     alignment: Alignment.bottomRight,
@@ -130,19 +300,15 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: theme.scaffoldBackgroundColor, width: 4),
                           boxShadow: AppTheme.softShadow,
-                          image: const DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
+                          image: DecorationImage(
+                            image: NetworkImage(_avatarUrl.isNotEmpty ? _avatarUrl : AuthService.defaultAvatar),
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
                       if (_isEditing)
                         GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Profile picture upload coming soon!')),
-                            );
-                          },
+                          onTap: _showAvatarPicker,
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -187,7 +353,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                       return 'Please enter your email';
                     }
                     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                    if (!emailRegex.hasMatch(value)) {
+                    if (!emailRegex.hasMatch(value.trim())) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -218,7 +384,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                   valueColor: const Color(0xFFB45309), // Amber 700
                   bgColor: const Color(0xFFFEF3C7), // Amber 100
                 ),
-                
+
                 const SizedBox(height: 40),
 
                 // Save button
@@ -304,7 +470,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    controller.text,
+                    controller.text.isNotEmpty ? controller.text : 'Not provided',
                     style: TextStyle(
                       fontSize: 15,
                       color: AppTheme.textDark,

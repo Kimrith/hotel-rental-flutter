@@ -40,6 +40,14 @@ class ApiConfig {
   }
 
   // ---------------------------------------------------------------------------
+  // User Controller API Endpoints (Swagger /api/v1/users)
+  // ---------------------------------------------------------------------------
+  static String get users => '$baseUrl/api/v1/users';
+  static String get userRegister => '$baseUrl/api/v1/users/register';
+  static String get userLogin => '$baseUrl/api/v1/users/login';
+  static String userById(dynamic id) => '$baseUrl/api/v1/users/$id';
+
+  // ---------------------------------------------------------------------------
   // Hotel Controller API Endpoints (Swagger /api/v1/hotels)
   // ---------------------------------------------------------------------------
   static String get hotels => '$baseUrl/api/v1/hotels';

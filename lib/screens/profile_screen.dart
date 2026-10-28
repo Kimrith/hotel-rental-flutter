@@ -23,9 +23,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ValueListenableBuilder<bool>(
-          valueListenable: AuthService().authStateNotifier,
-          builder: (context, isLoggedIn, _) {
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            AuthService().authStateNotifier,
+            AuthService().profileUpdateNotifier,
+          ]),
+          builder: (context, _) {
+            final isLoggedIn = AuthService().isLoggedIn;
             return SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
@@ -50,48 +54,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(bool isLoggedIn) {
-    final name = isLoggedIn ? AuthService().userName : 'Guest User';
-    final email = isLoggedIn ? AuthService().userEmail : 'Sign in to access all features';
+    final auth = AuthService();
+    final name = isLoggedIn ? auth.userName : 'Guest User';
+    final email = isLoggedIn ? auth.userEmail : 'Sign in to access all features';
+    final avatarUrl = auth.avatarUrl.isNotEmpty ? auth.avatarUrl : AuthService.defaultAvatar;
 
     return Column(
       children: [
         // Avatar stack with edit pen
-        Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            Container(
-              height: 100,
-              width: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 4),
-                boxShadow: AppTheme.softShadow,
-                color: isLoggedIn ? null : AppTheme.primaryLight,
-                image: isLoggedIn
-                    ? const DecorationImage(
-                        image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: isLoggedIn
-                  ? null
-                  : Icon(Icons.person_outline_rounded, size: 50, color: AppTheme.primary),
-            ),
-            if (isLoggedIn)
+        GestureDetector(
+          onTap: () async {
+            if (isLoggedIn) {
+              await Navigator.pushNamed(context, '/personal-details');
+              if (mounted) setState(() {});
+            } else {
+              await Navigator.pushNamed(context, '/login');
+            }
+          },
+          child: Stack(
+            alignment: Alignment.bottomRight,
+            children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                height: 100,
+                width: 100,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary,
                   shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 4),
+                  boxShadow: AppTheme.softShadow,
+                  color: isLoggedIn ? null : AppTheme.primaryLight,
+                  image: isLoggedIn
+                      ? DecorationImage(
+                          image: NetworkImage(avatarUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: const Icon(
-                  Icons.edit_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
+                child: isLoggedIn
+                    ? null
+                    : Icon(Icons.person_outline_rounded, size: 50, color: AppTheme.primary),
               ),
-          ],
+              if (isLoggedIn)
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Text(
@@ -128,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                isLoggedIn ? 'Verified Member' : 'Guest Account',
+                isLoggedIn ? auth.membership : 'Guest Account',
                 style: TextStyle(
                   color: isLoggedIn ? const Color(0xFF92400E) : AppTheme.textMuted,
                   fontSize: 11,
@@ -337,7 +353,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 }
               } else if (title == 'Personal Details') {
-                Navigator.pushNamed(context, '/personal-details');
+                await Navigator.pushNamed(context, '/personal-details');
+                if (mounted) {
+                  setState(() {});
+                }
               } else if (title == 'Payments & Payouts') {
                 Navigator.pushNamed(context, '/payments');
               } else if (title == "Help Center") {

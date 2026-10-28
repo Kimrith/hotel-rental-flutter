@@ -13,6 +13,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -22,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -31,9 +33,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text.trim();
       final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
       await AuthService().register(
         name: name,
         email: email,
+        phone: phone.isNotEmpty ? phone : null,
       );
 
       if (mounted) {
@@ -152,6 +156,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 20),
+                // Phone Number Field (Optional)
+                Text(
+                  'Phone Number (Optional)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: TextStyle(color: AppTheme.textDark),
+                  decoration: InputDecoration(
+                    hintText: 'Enter phone number (e.g. +855 12 345 678)',
+                    prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.textMuted),
+                    fillColor: AppTheme.cardBg,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 // Password Field
